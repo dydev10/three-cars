@@ -30,11 +30,14 @@ export default class Vehicle implements GridSystem {
     this.config = globalThis.structuredClone(config.vehicle);
   }
 
+  start = () => {
+    console.log('starting vehicle');
+  }
+
   update = () => {
     // frame loop
 
-    console.log('Real vehicle system');
-    
+    // console.log('Real vehicle system');
   };
 
 

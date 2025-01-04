@@ -32,6 +32,7 @@ export type GridTile = GridXY & {
 export interface GridSystem {
   id: string;
   group: Group;
+  start: () => void;
   update: () => void;
 }
 
@@ -88,6 +89,10 @@ export default class LevelGrid {
   }
 
   createDebugFolder = () => {
+    const playBtn = this.debug.addButton({
+      title: 'Play',
+      // label: 'floor'
+    });
     const floorHideBtn = this.debug.addButton({
       title: 'Hide',
       label: 'floor'
@@ -106,6 +111,7 @@ export default class LevelGrid {
       label: 'camera'
     });
     
+    playBtn.on('click', this.play);
     floorHideBtn.on('click', this.hideGridBlocks);
     floorShowBtn.on('click', this.showGridBlocks);
   
@@ -146,6 +152,9 @@ export default class LevelGrid {
     const testSystem: GridSystem = {
       id: 'testSystem',
       group: new Group(),
+      start: () => {
+        console.log('Start test system...');
+      },
       update: () => {
         // console.log('Updating test system...');
       },
@@ -313,6 +322,10 @@ export default class LevelGrid {
     this.grid.flat().forEach((block) => {
       block.block.mesh.visible = true;
     });
+  };
+
+  play = () => {
+    this.systems.forEach(system => system.start());
   };
 
   /**
