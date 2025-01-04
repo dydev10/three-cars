@@ -15,6 +15,7 @@ import CityHouse from "../../engine/shapes/CityHouse.ts";
 import Road from "../../engine/shapes/Road.ts";
 import Ball from "../../engine/shapes/Ball.ts";
 import RoadMesh from "../../assets/RoadMesh/RoadMesh.ts";
+import Vehicle from "../../vehicle/Vehicle.ts";
 
 export type GridXY = {
   x: number;
@@ -28,11 +29,11 @@ export type GridTile = GridXY & {
   asset?: GridAsset;
 };
 
-type GridSystem = {
-  id: string,
-  group: Group,
-  update: () => void,
-};
+export interface GridSystem {
+  id: string;
+  group: Group;
+  update: () => void;
+}
 
 /**
  * Basic level with grid based floor blocks
@@ -145,9 +146,14 @@ export default class LevelGrid {
     const testSystem: GridSystem = {
       id: 'testSystem',
       group: new Group(),
-      update: () => { console.log('Updating test system...'); }
+      update: () => {
+        // console.log('Updating test system...');
+      },
     };
     this.systems.set(testSystem.id, testSystem);
+
+    const vehicleSystem: GridSystem = new Vehicle('vehicleSystem');
+    this.systems.set(vehicleSystem.id, vehicleSystem);
   };
 
   addTestCube = () => {

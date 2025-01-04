@@ -1,6 +1,7 @@
 // @ts-types="@types/three"
-import { Group, Material, Mesh, Vector3 } from "three";
+import { Group, Material, Mesh, Vector3, BoxGeometry, MeshStandardMaterial } from "three";
 import config from "../game/config.ts";
+import { GridSystem } from "../game/level/LevelGrid.ts";
 
 export type VehicleConfig = {
   speed: number;
@@ -12,19 +13,28 @@ export type VehicleConfig = {
   maxHistory: number;
 };
 
-export default class Vehicle extends Group {
-  config: VehicleConfig
+export default class Vehicle implements GridSystem {
+  id: string;
+  group: Group;
 
-  constructor(mesh: Mesh) {
-    super();
-    this.add(mesh);
-    this.config = {...config.vehicle};
+  private mesh: Mesh;
+  private config: VehicleConfig
 
-
+  constructor(id: string) {
+    this.id = id;
+    this.group = new Group();
+    
+    this.mesh = new Mesh(new BoxGeometry(), new MeshStandardMaterial());
+    this.group.add(this.mesh);
+    
+    this.config = globalThis.structuredClone(config.vehicle);
   }
 
   update = () => {
     // frame loop
+
+    console.log('Real vehicle system');
+    
   };
 
 
@@ -35,7 +45,7 @@ export default class Vehicle extends Group {
 
   getMaterial = (): Material | null => {
     let material = null;
-    this.traverse((child) => {
+    this.group.traverse((child) => {
       if(child instanceof Mesh) {
         material = child.material;        
       }
@@ -44,7 +54,7 @@ export default class Vehicle extends Group {
   };
 
   dispose = () => {
-    this.getMaterial()?.dispose();
-    this.removeFromParent();
+    // this.getMaterial()?.dispose();
+    // this.removeFromParent();
   };
 }
