@@ -14,8 +14,7 @@ import GridAsset from "./GridAsset.ts";
 import CityHouse from "../../engine/shapes/CityHouse.ts";
 import Road from "../../engine/shapes/Road.ts";
 import Ball from "../../engine/shapes/Ball.ts";
-import VehicleGraph from "../../vehicle/VehicleGraph.ts";
-import RoadMesh from "../../vehicle/meshes/RoadMesh.ts";
+import RoadMesh from "../../assets/RoadMesh/RoadMesh.ts";
 
 export type GridXY = {
   x: number;
@@ -50,7 +49,7 @@ export default class LevelGrid {
   hoveredTile: GridTile | null;
   // gizmo: Gizmo;
   transforms: Array<IDraggable>;
-  systems: Array<GridSystem>; // TODO: Define interface for level system
+  systems: Map<string, GridSystem>; // TODO: Define interface for level system
 
   constructor(game: Game) {
     this.game = game;
@@ -62,7 +61,7 @@ export default class LevelGrid {
     this.toolbar = this.game.toolbar;
     this.size = config.grid.size;
     this.transforms = [];
-    this.systems = [];
+    this.systems = new Map<string, GridSystem>;
     // this.floor = new Floor(this.width, this.height);
     this.grid = [];
     this.hoveredTile = null;
@@ -142,18 +141,13 @@ export default class LevelGrid {
   };
 
   setupSystems = () => {
-    const vehicleGraph =  new VehicleGraph(this.size);
-    this.systems.push({
-      id: 'vehicleGraph',
-      group: vehicleGraph,
-      update: vehicleGraph.update,
-    });
-    this.game.world.scene.add(vehicleGraph);
-    this.debug.addBinding(vehicleGraph.helper, 'visible', {
-      label: 'Vehicle helper'
-    });
-
-    console.log('LevelGrid:: Setup systems');
+    // setup level systems
+    const testSystem: GridSystem = {
+      id: 'testSystem',
+      group: new Group(),
+      update: () => { console.log('Updating test system...'); }
+    };
+    this.systems.set(testSystem.id, testSystem);
   };
 
   addTestCube = () => {
@@ -205,9 +199,6 @@ export default class LevelGrid {
     const nextRotation = this.hoveredTile.asset.rotation + 1;
     const nextAsset = this.hoveredTile.asset.clone(nextRotation);
     this.setGridAsset(nextAsset);
-
-    // call tool rotate handlers after asset is updated
-    this.handleRoadTool();
   };
 
   removeHoveredTileAsset = () => {
@@ -225,53 +216,14 @@ export default class LevelGrid {
     this.hoveredTile.asset = undefined;
   };
 
-  addRoadAsset = (type: string, rotation: number = 0) => {
-    const roadMesh = RoadMesh.create(type, 0);
-    const roadAsset = new GridAsset(this.game, roadMesh, rotation, type);
-    this.setGridAsset(roadAsset);
-  };
-
-  handleRoadTool = () => {
-    const { action } = this.toolbar;
-    if (!action || !this.hoveredTile || !this.systems.length) return;
-
-    const vehicleGraph = this.systems[0].group;
-
-    if (vehicleGraph instanceof VehicleGraph) {
-      if (action === 'remove') {
-        vehicleGraph.updateTile(this.hoveredTile.x, this.hoveredTile.y, null);
-      }
-
-      if (action === 'rotate') {
-        const { x, y, asset } = this.hoveredTile;
-        if (!asset) return;
-        const rotation = asset.rotation;
-        const type = asset.type;
-        vehicleGraph.updateTile(x, y, type, rotation);
-      }
-
-      const actionParts = action.split('_');
-      if (actionParts.length > 1) {
-        const rotation = 0;
-        const roadType = actionParts[1];
-        this.addRoadAsset(roadType, rotation);
-        vehicleGraph.updateTile(this.hoveredTile.x, this.hoveredTile.y, roadType, rotation);
-      }
-    }
-  };
-
-  addRoadNodes = (x: number = 0, y: number = 0, asset?: GridAsset) => {
-    if (!this.systems.length) return;
-    const vehicleGraph = this.systems[0].group;
-
-    if (vehicleGraph instanceof VehicleGraph) {
-      if (!asset?.type ) {
-        vehicleGraph.updateTile(x, y, null);
-        return;
-      }
-
-      const { type , rotation } = asset;
-      vehicleGraph.updateTile(x, y, type, rotation);
+  addRoadAsset = (action: string) => {
+    const actionParts = action.split('_');
+    if (actionParts.length > 1) {
+      const rotation = 0;
+      const roadType = actionParts[1];
+      const roadMesh = RoadMesh.create(roadType, rotation);
+      const roadAsset = new GridAsset(this.game, roadMesh, rotation, roadType);
+      this.setGridAsset(roadAsset);
     }
   };
 
@@ -280,7 +232,8 @@ export default class LevelGrid {
 
     // vehicle graph tool, also triggers on remove to handle removing
     if (action?.startsWith('road_') || action === 'remove') {
-      this.handleRoadTool();
+      // this.handleRoadTool();
+      this.addRoadAsset(action);
     }
 
     if (action === 'road') {
@@ -363,8 +316,6 @@ export default class LevelGrid {
     this.hoverGrid();
     
     // call update on each system
-    for (const system of this.systems) {
-      system.update();
-    }
+    this.systems.forEach(system => system.update());
   };
 }

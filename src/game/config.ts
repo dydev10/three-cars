@@ -1,4 +1,4 @@
-import { VehicleConfig } from "../vehicle/VehicleGraph.ts";
+import { VehicleConfig } from "../vehicle/Vehicle.ts";
 
 export type GameConfig = {
   vehicle: VehicleConfig;
