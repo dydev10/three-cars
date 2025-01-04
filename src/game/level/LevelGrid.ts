@@ -16,7 +16,6 @@ import Road from "../../engine/shapes/Road.ts";
 import Ball from "../../engine/shapes/Ball.ts";
 import VehicleGraph from "../../vehicle/VehicleGraph.ts";
 import RoadMesh from "../../vehicle/meshes/RoadMesh.ts";
-import WaveFunctionCollapse from "../../generators/WaveFunctionCollapse.ts";
 
 export type GridXY = {
   x: number;
@@ -52,7 +51,6 @@ export default class LevelGrid {
   // gizmo: Gizmo;
   transforms: Array<IDraggable>;
   systems: Array<GridSystem>; // TODO: Define interface for level system
-  generator: WaveFunctionCollapse; // TODO: Combine with system or new interface
 
   constructor(game: Game) {
     this.game = game;
@@ -83,14 +81,10 @@ export default class LevelGrid {
     // Init systems
     this.setupSystems();
 
-    // setup generator
-    this.generator = new WaveFunctionCollapse(this.size);
 
     // @ts-expect-error never
     this.inputs.addEventListener('click', this.onInputClick);
 
-    // @ts-expect-error never
-    this.generator.addEventListener('collapsed', this.handleGeneratedGrid)
   }
 
   createDebugFolder = () => {
@@ -117,23 +111,6 @@ export default class LevelGrid {
   
     cameraResetBtn.on('click', this.setupCamera);
     camera2DBtn.on('click', this.set2DCamera);
-
-    // generator debug
-    const iterateBtn = this.debug.addButton({
-      title: 'Iterate',
-      label: 'wave fn'
-    });
-    const generateBtn = this.debug.addButton({
-      title: 'Generate',
-      label: 'wave fn'
-    });
-    iterateBtn.on('click', () => {
-      this.generator.iterateWaveCollapse();
-      this.handleGeneratedGrid();
-    });
-    generateBtn.on('click', () => {
-      this.generator.setRunning(true)
-    });
   };
 
   createGrid = () => {
@@ -179,18 +156,6 @@ export default class LevelGrid {
     console.log('LevelGrid:: Setup systems');
   };
 
-  handleGeneratedGrid = () => {
-    this.generator.waveGrid.forEach((waveTile) => {
-      const { cell, type, rotation, collapsed } = waveTile;
-      this.updateGeneratedTileAsset(type, rotation, cell);
-
-      if(!collapsed) {
-        console.log('Not colapsed', cell, type);
-        
-      }
-    });
-  }
-
   addTestCube = () => {
     console.log('Grid test tile');
   };
@@ -214,7 +179,6 @@ export default class LevelGrid {
     if (!this.hoveredTile) return;
     const { x, y } = this.hoveredTile;
 
-    this.generator.regenerate(x, y);
 
     // const roadMesh = new Road();
     // const gridAsset = new GridAsset(this.game, roadMesh,);
@@ -244,34 +208,6 @@ export default class LevelGrid {
 
     // call tool rotate handlers after asset is updated
     this.handleRoadTool();
-  };
-
-  updateGeneratedTileAsset = (type: string | null, rotation: number, cell: number[]) => {
-    // if (!this.hoveredTile?.asset) return;
-    if (!type) return;
-    const [x, y] = cell;
-    const currentTile = this.grid[x][y];
-    const currentAsset = currentTile?.asset;
-
-    // Skip mesh update for unchanged tiles
-    if(currentAsset?.type === type && currentAsset?.rotation === rotation) {
-      return;
-    }
-
-    if (currentAsset) {
-      currentAsset.removeFromGrid();
-    }
-
-    const roadMesh = RoadMesh.create(type, 0);
-    const roadAsset = new GridAsset(this.game, roadMesh, rotation, type);
-    roadAsset.addToGrid({
-      x,
-      y
-    });
-    this.grid[x][y].asset = roadAsset;
-
-    // call tool handler after asset is updated
-    this.addRoadNodes(x, y, roadAsset);
   };
 
   removeHoveredTileAsset = () => {
@@ -429,11 +365,6 @@ export default class LevelGrid {
     // call update on each system
     for (const system of this.systems) {
       system.update();
-    }
-    
-    // update generator
-    if (this.generator) {
-      this.generator.update();
     }
   };
 }
